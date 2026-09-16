@@ -1,0 +1,13 @@
+# Core ML / CV stack
+ultralytics>=8.3.0
+opencv-python>=4.10.0
+numpy>=1.26.0
+torch>=2.5.0
+torchvision>=0.20.0
+pytest>=8.0.0
+roboflow>=1.1.50
+requests>=2.32.0
+inference-sdk>=0.9.0; python_version < "3.13"
+
+# Optional for future hand-mouth analysis
+# mediapipe>=0.10.18

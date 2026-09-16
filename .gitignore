@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE / editor
+.vscode/
+.idea/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local data and generated files
+*.log
+*.sqlite3
+snapshots/
+data/**/*.png
+!data/**/.gitkeep
+
+# Model files (keep placeholders only)
+models/*.pt
+!models/README.md
+
+# OS
+.DS_Store
+Thumbs.db
