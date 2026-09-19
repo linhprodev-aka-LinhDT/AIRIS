@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter
@@ -15,8 +16,11 @@ from src.services.demo_data import (
     get_demo_statistics,
 )
 from src.services.privacy import sanitize_event, sanitize_school_payload
+from src.api.schemas import AirQualityReadingPayload
+from src.sensors import AirQualityReading, SensorVerifier
 
 router = APIRouter()
+sensor_verifier = SensorVerifier()
 
 
 @router.get("/health")
@@ -24,7 +28,8 @@ async def api_health() -> dict[str, Any]:
     return {
         "status": "ok",
         "demo_mode": True,
-        "timestamp": "2026-09-16T00:00:00Z",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "sensor_zones": len(sensor_verifier.latest()),
     }
 
 
@@ -85,3 +90,49 @@ async def get_cameras() -> dict[str, Any]:
 async def get_camera(camera_id: str) -> dict[str, Any]:
     camera = next((item for item in DEMO_CAMERAS if item["camera_id"] == camera_id), DEMO_CAMERAS[0])
     return {"camera": camera}
+
+
+@router.post("/sensors/readings")
+async def ingest_sensor_reading(payload: AirQualityReadingPayload) -> dict[str, Any]:
+    reading = AirQualityReading(
+        sensor_id=payload.sensor_id,
+        zone_id=payload.zone_id,
+        timestamp=payload.timestamp or datetime.now(timezone.utc).isoformat(),
+        pm25=payload.pm25,
+        co_ppm=payload.co_ppm,
+        co2_ppm=payload.co2_ppm,
+        voc_index=payload.voc_index,
+        smoke_alarm=payload.smoke_alarm,
+    )
+    sensor_verifier.ingest(reading)
+    return {"reading": reading.__dict__, "verification": sensor_verifier.verify(reading.zone_id)}
+
+
+@router.get("/sensors/readings")
+async def get_sensor_readings(zone_id: str | None = None) -> dict[str, Any]:
+    return {"readings": [reading.__dict__ for reading in sensor_verifier.latest(zone_id)]}
+
+
+@router.get("/sensors/verify/{zone_id}")
+async def verify_sensor_zone(zone_id: str) -> dict[str, Any]:
+    return {"verification": sensor_verifier.verify(zone_id)}
+
+
+@router.get("/awareness/questions")
+async def get_awareness_questions() -> dict[str, Any]:
+    return {
+        "questions": [
+            {
+                "question_id": "air-1",
+                "question": "Khi cảm biến báo khói bất thường, hành động phù hợp nhất là gì?",
+                "options": ["Bỏ qua", "Báo đội ứng trực và ban quản lý", "Tắt cảm biến"],
+                "points": 10,
+            },
+            {
+                "question_id": "privacy-1",
+                "question": "AIRIS lưu dữ liệu nào sau khi xử lý camera?",
+                "options": ["Video nhận diện khuôn mặt", "Hồ sơ cá nhân", "Sự kiện tổng hợp dạng văn bản"],
+                "points": 10,
+            },
+        ]
+    }

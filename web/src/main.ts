@@ -17,19 +17,23 @@ async function loadDashboard() {
   if (!app) return;
 
   try {
-    const [health, stats, schools, events, heatmap, achievements] = await Promise.all([
+    const [health, stats, schools, events, heatmap, achievements, sensors, awareness] = await Promise.all([
       api.health(),
       api.statistics(),
       api.schools(),
       api.events(),
       api.heatmap(),
       api.achievements(),
+      api.sensorReadings(),
+      api.awarenessQuestions(),
     ]);
 
     const schoolData = schools.schools ?? [];
     const eventData = events.events ?? [];
     const heatmapData = heatmap.zones ?? [];
     const achievementData = achievements.achievements ?? [];
+    const sensorData = sensors.readings ?? [];
+    const questionData = awareness.questions ?? [];
 
     const primarySchool = schoolData[0];
     const cameraCount = schoolData.reduce((sum, school) => sum + (school.camera_count ?? 0), 0);
@@ -44,7 +48,7 @@ async function loadDashboard() {
             <h1>AIRIS</h1>
             <div class="subtitle">Smoke-Free Campus</div>
           </div>
-          <div class="badge">${health.demo_mode ? 'DEMO MODE' : 'LIVE MODE'}</div>
+          <div class="badge">${health.demo_mode ? 'DEMO MODE' : 'LIVE MODE'} · ${health.sensor_zones ?? 0} sensor zones</div>
         </header>
 
         <section class="system-status">
@@ -127,6 +131,21 @@ async function loadDashboard() {
                   (item) => `<li><strong>${item.badge} ${item.title}</strong></li>`,
                 )
                 .join('')}
+            </ul>
+          </article>
+        </section>
+
+        <section class="grid" style="margin-top: 20px;">
+          <article class="card">
+            <h3>Air Quality Sensors</h3>
+            <ul class="list-table">
+              ${sensorData.length ? sensorData.map((reading) => `<li><span>${reading.zone_id}</span><strong>${reading.smoke_alarm ? 'SMOKE ALARM' : `PM2.5 ${reading.pm25 ?? '--'}`}</strong></li>`).join('') : '<li><span>No readings</span><em>Waiting for sensor data</em></li>'}
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Daily Awareness</h3>
+            <ul class="list-table">
+              ${questionData.map((item) => `<li><span>${item.question}</span><strong>+${item.points}</strong></li>`).join('')}
             </ul>
           </article>
         </section>

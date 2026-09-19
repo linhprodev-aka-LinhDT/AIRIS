@@ -20,6 +20,74 @@ class Detection:
     class_name: str
     confidence: float
     bbox: tuple[float, float, float, float]
+    keypoints: tuple[tuple[float, float, float], ...] = ()
+
+
+class YOLOPoseDetector:
+    """Ultralytics pose detector that keeps only privacy-safe body landmarks."""
+
+    def __init__(
+        self,
+        model_path: str | Path = CONFIG.pose_model_path,
+        confidence_threshold: float = CONFIG.confidence_threshold,
+        device: str = "cpu",
+    ) -> None:
+        self.model_path = str(model_path)
+        self.confidence_threshold = confidence_threshold
+        self.device = device
+        self.logger = logging.getLogger(__name__)
+        # Ultralytics downloads the official pose weights on first use when absent.
+        self.model = YOLO(self.model_path if Path(self.model_path).exists() else "yolo11n-pose.pt")
+
+    def detect(self, frame: np.ndarray) -> list[Detection]:
+        results = self.model.predict(
+            source=frame,
+            conf=self.confidence_threshold,
+            device=self.device,
+            verbose=False,
+            imgsz=640,
+        )
+        detections: list[Detection] = []
+        for result in results:
+            if result.boxes is None or result.keypoints is None:
+                continue
+            boxes = result.boxes.xyxy.cpu().numpy()
+            confs = result.boxes.conf.cpu().numpy()
+            points = result.keypoints.data.cpu().numpy()
+            for box, confidence, keypoint_set in zip(boxes, confs, points):
+                detections.append(
+                    Detection(
+                        class_id=0,
+                        class_name="person",
+                        confidence=float(confidence),
+                        bbox=(float(box[0]), float(box[1]), float(box[2]), float(box[3])),
+                        keypoints=tuple(tuple(float(value) for value in point) for point in keypoint_set),
+                    )
+                )
+        return detections
+
+    @property
+    def model_name(self) -> str:
+        return self.model_path
+
+
+def pose_smoking_evidence(detection: Detection) -> bool:
+    """Return true when a visible wrist is close to the person's mouth."""
+    if len(detection.keypoints) < 11:
+        return False
+    x1, y1, x2, y2 = detection.bbox
+    body_width = max(x2 - x1, 1.0)
+    nose_x, nose_y, nose_score = detection.keypoints[0]
+    wrist_points = (detection.keypoints[9], detection.keypoints[10])
+    if nose_score < 0.35:
+        return False
+    for wrist_x, wrist_y, wrist_score in wrist_points:
+        if wrist_score < 0.35:
+            continue
+        distance = ((wrist_x - nose_x) ** 2 + (wrist_y - nose_y) ** 2) ** 0.5
+        if distance <= body_width * 0.22:
+            return True
+    return False
 
 
 class YOLODetector:

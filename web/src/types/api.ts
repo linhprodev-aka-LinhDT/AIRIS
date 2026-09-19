@@ -74,3 +74,21 @@ export type Achievement = {
   school_id: string;
   badge: string;
 };
+
+export type AirQualityReading = {
+  sensor_id: string;
+  zone_id: string;
+  timestamp: string;
+  pm25?: number | null;
+  co_ppm?: number | null;
+  co2_ppm?: number | null;
+  voc_index?: number | null;
+  smoke_alarm: boolean;
+};
+
+export type AwarenessQuestion = {
+  question_id: string;
+  question: string;
+  options: string[];
+  points: number;
+};

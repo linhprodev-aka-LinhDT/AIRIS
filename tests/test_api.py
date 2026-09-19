@@ -54,3 +54,16 @@ def test_heatmap_endpoint_has_density_ranges() -> None:
     first = payload["zones"][0]
     assert "smoke_density" in first
     assert "level" in first
+
+
+def test_sensor_reading_is_ingested_and_verified() -> None:
+    response = client.post(
+        "/api/sensors/readings",
+        json={"sensor_id": "test-sensor", "zone_id": "zone-test", "pm25": 50.0},
+    )
+    assert response.status_code == 200
+    assert response.json()["verification"]["status"] == "corroborated"
+
+    verification = client.get("/api/sensors/verify/zone-test")
+    assert verification.status_code == 200
+    assert verification.json()["verification"]["zone_id"] == "zone-test"

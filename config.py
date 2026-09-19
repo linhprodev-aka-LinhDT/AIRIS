@@ -14,7 +14,8 @@ INPUT_DIR = DATA_DIR / "input"
 @dataclass(frozen=True)
 class AppConfig:
     project_name: str = "AIRIS"
-    model_path: str = str(MODELS_DIR / "yolo11n.pt")
+    model_path: str = str(BASE_DIR / "yolo11n.pt")
+    pose_model_path: str = str(MODELS_DIR / "yolo11n-pose.pt")
     source: int | str = 0
     confidence_threshold: float = 0.25
     iou_threshold: float = 0.45
@@ -24,7 +25,10 @@ class AppConfig:
     temporal_min_evidence_frames: int = 2
     alert_cooldown_seconds: float = 20.0
     enable_hand_mouth: bool = False
-    save_snapshots: bool = True
+    save_snapshots: bool = False
+    sensor_verification_window_seconds: int = 120
+    smoke_pm25_threshold: float = 35.0
+    smoke_co_threshold: float = 9.0
     show_preview: bool = False
     log_level: str = "INFO"
     database_path: str = str(DATABASE_DIR / "airis.db")

@@ -97,6 +97,8 @@ python main.py --source 0
 python main.py --source data/input/test.mp4
 ```
 
+The default backend is `pose`, using Ultralytics `yolo11n-pose.pt` and hand-to-mouth proximity as privacy-safe evidence. The pose weights are downloaded automatically on first use. Alert snapshots are disabled by default; use `--save` only for controlled debugging.
+
 ## Run the API backend
 
 ```powershell
@@ -140,6 +142,14 @@ The privacy page in the dashboard documents:
 - what AIRIS records
 - what AIRIS does not record
 - retention and monitoring safeguards
+
+Sensor readings can be sent to the API without sending camera frames:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/sensors/readings -Method Post -ContentType 'application/json' -Body '{"sensor_id":"esp32-01","zone_id":"ct1a-floor5","pm25":48,"co_ppm":2,"smoke_alarm":false}'
+```
+
+AIRIS stores the sensor verification result and anonymous event metadata only. The awareness question feed is available at `/api/awareness/questions`.
 
 ## Run with the public Roboflow smoking model
 

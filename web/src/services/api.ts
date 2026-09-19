@@ -1,4 +1,4 @@
-import type { Achievement, Camera, EventSummary, HeatmapPoint, School, Statistics, Zone } from '../types/api';
+import type { Achievement, AirQualityReading, AwarenessQuestion, Camera, EventSummary, HeatmapPoint, School, Statistics, Zone } from '../types/api';
 
 const API_BASE = '/api';
 
@@ -11,7 +11,7 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export const api = {
-  health: () => getJson<{ status: string; demo_mode: boolean; timestamp: string }>('/health'),
+  health: () => getJson<{ status: string; demo_mode: boolean; timestamp: string; sensor_zones?: number }>('/health'),
   schools: () => getJson<{ schools: School[] }>('/schools'),
   school: (schoolId: string) => getJson<{ school: School }>(`/schools/${schoolId}`),
   zones: () => getJson<{ zones: Zone[] }>('/zones'),
@@ -23,4 +23,6 @@ export const api = {
   achievements: () => getJson<{ achievements: Achievement[] }>('/achievements'),
   cameras: () => getJson<{ cameras: Camera[] }>('/cameras'),
   camera: (cameraId: string) => getJson<{ camera: Camera }>(`/cameras/${cameraId}`),
+  sensorReadings: () => getJson<{ readings: AirQualityReading[] }>('/sensors/readings'),
+  awarenessQuestions: () => getJson<{ questions: AwarenessQuestion[] }>('/awareness/questions'),
 };

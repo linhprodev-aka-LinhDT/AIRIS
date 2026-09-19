@@ -9,7 +9,7 @@ import numpy as np
 
 from config import CONFIG
 from src.alert_manager import AlertManager
-from src.detector import RoboflowDetector, YOLODetector
+from src.detector import RoboflowDetector, YOLODetector, YOLOPoseDetector, pose_smoking_evidence
 from src.event_logger import EventLogger
 from src.temporal_analysis import TemporalAnalyzer, TemporalState
 from src.tracker import Tracker
@@ -26,14 +26,18 @@ def configure_logging(level: str = CONFIG.log_level) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="AIRIS detection pipeline")
     parser.add_argument("--source", type=str, default=str(CONFIG.source), help="Camera index or path to video file")
-    parser.add_argument("--backend", choices=("yolo", "roboflow"), default="yolo", help="Detection backend")
+    parser.add_argument("--backend", choices=("yolo", "roboflow", "pose"), default="pose", help="Detection backend")
     parser.add_argument("--model", type=str, default=CONFIG.model_path, help="Path to YOLO model")
     parser.add_argument("--model-id", default="smoking-detection-3gefl/4", help="Roboflow model ID")
     parser.add_argument("--api-url", default="https://serverless.roboflow.com", help="Roboflow inference API URL")
     parser.add_argument("--conf", type=float, default=CONFIG.confidence_threshold, help="Detection confidence threshold")
     parser.add_argument("--show", action="store_true", default=CONFIG.show_preview, help="Show preview window")
-    parser.add_argument("--save", action="store_true", default=CONFIG.save_snapshots, help="Save alert snapshots")
+    parser.add_argument("--save", action="store_true", default=CONFIG.save_snapshots, help="Opt in to temporary alert snapshots")
     return parser.parse_args()
+
+
+def _parse_source(value: str) -> int | str:
+    return int(value) if value.isdigit() else value
 
 
 def _is_smoke_like(class_name: str) -> bool:
@@ -68,6 +72,8 @@ def main() -> int:
     try:
         if args.backend == "roboflow":
             detector = RoboflowDetector(model_id=args.model_id, api_url=args.api_url, confidence_threshold=args.conf)
+        elif args.backend == "pose":
+            detector = YOLOPoseDetector(confidence_threshold=args.conf, device="cpu")
         else:
             detector = YOLODetector(model_path=args.model, confidence_threshold=args.conf, device="cpu")
     except (RuntimeError, ValueError) as exc:
@@ -75,7 +81,7 @@ def main() -> int:
         return 1
 
     try:
-        capture = VideoCapture(args.source)
+        capture = VideoCapture(_parse_source(args.source))
         capture.open()
     except RuntimeError as exc:
         logging.error(str(exc))
@@ -88,7 +94,7 @@ def main() -> int:
         confidence_threshold=CONFIG.confidence_threshold,
         min_evidence_frames=CONFIG.temporal_min_evidence_frames,
     )
-    alert_manager = AlertManager(snapshot_dir=CONFIG.snapshot_dir, cooldown_seconds=CONFIG.alert_cooldown_seconds)
+    alert_manager = AlertManager(snapshot_dir=CONFIG.snapshot_dir, cooldown_seconds=CONFIG.alert_cooldown_seconds, save_snapshots=args.save)
     event_logger = EventLogger(database_path=CONFIG.database_path)
 
     try:
@@ -103,7 +109,7 @@ def main() -> int:
 
             track_decisions: dict[int, object] = {}
             for track in tracks:
-                smoke_evidence = False
+                smoke_evidence = pose_smoking_evidence(next((d for d in detections if d.class_name == "person" and d.bbox == track.bbox), detections[0])) if detections else False
                 for detection in detections:
                     if _is_smoke_like(detection.class_name) and _box_overlap(track.bbox, detection.bbox):
                         smoke_evidence = True

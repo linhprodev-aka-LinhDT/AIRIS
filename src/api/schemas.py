@@ -93,3 +93,14 @@ class ApiHealth(BaseModel):
     status: str = "ok"
     demo_mode: bool = True
     timestamp: str
+
+
+class AirQualityReadingPayload(BaseModel):
+    sensor_id: str
+    zone_id: str
+    timestamp: str | None = None
+    pm25: float | None = None
+    co_ppm: float | None = None
+    co2_ppm: float | None = None
+    voc_index: float | None = None
+    smoke_alarm: bool = False
