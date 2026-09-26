@@ -74,13 +74,28 @@ AIRIS/
 
 ## Setup
 
-Open PowerShell in the project root and run:
+Use Python 3.11 for the ML environment. On macOS/Linux:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+On Windows, open PowerShell in the project root and run:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+Roboflow support is optional. Install it only when using the Roboflow backend or the dataset download script:
+
+```bash
+python -m pip install -r requirements-roboflow.txt
 ```
 
 For the web layer, install frontend dependencies in the `web` folder:
@@ -157,7 +172,7 @@ The project can use the public Roboflow model `smoking-detection-3gefl/4` throug
 
 ```powershell
 $env:ROBOFLOW_API_KEY = "your-roboflow-api-key"
-& .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+& .\.venv\Scripts\python.exe -m pip install -r requirements-roboflow.txt
 & .\.venv\Scripts\python.exe main.py --backend roboflow --source data/input/test.mp4 --show
 ```
 
