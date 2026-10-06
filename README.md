@@ -114,6 +114,24 @@ python main.py --source data/input/test.mp4
 
 The default backend is `pose`, using Ultralytics `yolo11n-pose.pt` and hand-to-mouth proximity as privacy-safe evidence. The pose weights are downloaded automatically on first use. Alert snapshots are disabled by default; use `--save` only for controlled debugging.
 
+## Run smoking detection on a webcam
+
+The webcam script combines the trained `smoking_detection_v1.pt` model (classes
+`cigarette` and `smoke`) with `yolo11n.pt` for `person` detection:
+
+```bash
+.venv/bin/python scripts/open_webcam.py
+```
+
+Press `q` in the camera window to stop. A different camera or video can be
+selected with `--source`, for example `--source 1` or
+`--source data/input/test.mp4`. Adjust the threshold with `--conf 0.35`.
+The default webcam settings prioritize smoking detection: the smoking model
+uses `--imgsz 512` and a lower `--smoking-conf 0.15` on every frame, while the person model uses the smaller
+`--person-imgsz 320` every 10 frames. On a faster computer, use `--imgsz 640
+--frame-skip 1`; on a slower computer, use `--imgsz 320 --frame-skip 2
+--person-skip 15`.
+
 ## Run the API backend
 
 ```powershell
